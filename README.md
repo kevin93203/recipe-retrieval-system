@@ -3,9 +3,9 @@
 
 #Install Tools
 
-> pip uninstall torch torchvision
-> pip install -r ./requirement
-> pip install git+https://github.com/openai/CLIP.git
+> pip uninstall torch torchvision  
+> pip install -r ./requirement  
+> pip install git+https://github.com/openai/CLIP.git  
 
 #Download Database
 > python icook_recipe
