@@ -5,7 +5,7 @@
     
     async function getData() {
         const res = await fetch(
-            `http://10.54.12.187:8000/api/search?query=${searchState.query}`,
+            `http://localhost:8000/api/search?query=${searchState.query}`,
         );
         let data = await res.json();
 
