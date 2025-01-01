@@ -2,8 +2,10 @@
 
 
 #Install Tools
+
+> pip uninstall torch torchvision
 > pip install -r ./requirement
-> npm i
+> pip install git+https://github.com/openai/CLIP.git
 
 #Download Database
 > python icook_recipe
