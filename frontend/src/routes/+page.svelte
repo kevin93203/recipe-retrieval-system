@@ -1,12 +1,15 @@
 <script lang="ts">
     import RecipeCard from "../components/RecipeCard.svelte";
     import SearchBox from "../components/SearchBox.svelte";
-    import { searchState } from './shared.svelte.js';
-    
-    async function getData() {
-        const res = await fetch(
-            `http://localhost:8000/api/search?query=${searchState.query}`,
-        );
+    import { searchState } from "./shared.svelte.js";
+
+    async function searchByQuery() {
+        const formData = new FormData();
+        formData.append('query', searchState.query);
+        const res = await fetch(`http://localhost:8000/api/search/clip`, {
+            method: 'POST',
+            body: formData,
+        });
         let data = await res.json();
 
         if (res.ok) {
@@ -16,60 +19,31 @@
         }
     }
 
-    const mockRecipes = [
-        {
-            id: 1,
-            name: "蒜蓉炒青菜",
-            description: "簡單美味的快炒青菜,清爽開胃",
-            image: "https://imageproxy.icook.network/fit?background=255%2C255%2C255&height=800&nocrop=false&stripmeta=true&type=auto&url=http%3A%2F%2Ftokyo-kitchen.icook.tw.s3.amazonaws.com%2Fuploads%2Frecipe%2Fcover%2F471124%2Fe04e96b619c43007.jpg&width=800",
-            duration: "15分鐘",
-            difficulty: "簡單",
-            ingredients: [
-                { name: "青江菜", amount: "300克" },
-                { name: "蒜末", amount: "2湯匙" },
-                { name: "鹽", amount: "適量" },
-                { name: "食用油", amount: "2湯匙" },
-            ],
-            steps: [
-                {
-                    id: 1,
-                    description: "青江菜洗淨切段",
-                    image: "/images/step1.jpg",
-                },
-                {
-                    id: 2,
-                    description: "蒜末爆香",
-                    image: "/images/step2.jpg",
-                },
-                {
-                    id: 3,
-                    description: "加入青江菜快炒",
-                    image: "/images/step3.jpg",
-                },
-                {
-                    id: 4,
-                    description: "加入適量鹽調味即可",
-                    image: "/images/step4.jpg",
-                },
-            ],
-        },
-        // ... 其他食譜數據
-    ];
+    async function searchByImage(file: File) {
+        const formData = new FormData();
+        formData.append('file', file);
 
-    async function handleSearch(query) {
-        searchState.query = query;
-        searchState.results = await getData()
-        console.log(searchState.results)
-        // searchState.results = mockRecipes.filter(
-        //     (recipe) =>
-        //         recipe.name.includes(query) ||
-        //         recipe.description.includes(query),
-        // );
+        const res = await fetch(`http://localhost:8000/api/search/clip`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        let data = await res.json();
+
+        if (res.ok) {
+            return data;
+        } else {
+            throw new Error(data);
+        }
     }
 
-    async function handleImageUpload(event) {
-        const file = event.detail;
-        searchState.results = mockRecipes;
+    async function handleSearch(query:string) {
+        searchState.query = query;
+        searchState.results = await searchByQuery();
+    }
+
+    async function handleImageUpload(file: File) {
+        searchState.results = await searchByImage(file)
     }
 </script>
 
