@@ -8,8 +8,7 @@ app = FastAPI(title="食譜搜尋引擎 API")
 
 # CORS 設置
 origins = [
-    "http://localhost:5173",
-    "http://10.54.12.187:5173",
+    "http://localhost:5173"
 ]
 
 app.add_middleware(
@@ -39,6 +38,7 @@ async def root():
     }
 
 
+
 @app.get("/api/search")
 async def text_search(query: str, top_k: int = 10):
     """文字搜尋 API"""
@@ -63,6 +63,7 @@ async def image_search(file: UploadFile = File(...), top_k: int = 10):
     """圖片搜尋 API"""
     image = Image.open(file.file)
     return search_engine.image_search(image, top_k)
+
 
 
 @app.get("/api/recipe/{recipe_id}")

@@ -7,7 +7,6 @@
     let fileInput: HTMLInputElement = $state()
   
     function handleSubmit() {
-        console.log("handleSubmit")
         handleSearch(searchInput)
     }
   
@@ -16,6 +15,7 @@
       if (file) {
         handleImageUpload(file)
       }
+      event.target.value = '';
     }
   </script>
   
