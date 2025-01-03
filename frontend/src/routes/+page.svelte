@@ -4,12 +4,14 @@
     import { searchState } from "./shared.svelte.js";
 
     async function searchByQuery() {
-        const formData = new FormData();
-        formData.append('query', searchState.query);
-        const res = await fetch(`http://localhost:8000/api/search/clip`, {
-            method: 'POST',
-            body: formData,
-        });
+        let url = ""
+        if(searchState.type === "recipe"){
+            url = `http://localhost:8000/api/search?query=${searchState.query}&top_k=12`
+        } else {
+            url = `http://localhost:8000/api/ingredient-search?ingredients=${searchState.query}&top_k=12`
+            console.log(url)
+        }
+        const res = await fetch(url)
         let data = await res.json();
 
         if (res.ok) {
@@ -23,7 +25,7 @@
         const formData = new FormData();
         formData.append('file', file);
 
-        const res = await fetch(`http://localhost:8000/api/search/clip`, {
+        const res = await fetch(`http://localhost:8000/api/image-search?top_k=12`, {
             method: 'POST',
             body: formData,
         });
@@ -53,12 +55,27 @@
         <p>輸入食材或上傳美食照片，尋找你的下一道佳餚</p>
         <SearchBox {handleSearch} {handleImageUpload} />
     </div>
-
-    <div class="recipe-grid">
-        {#each searchState.results as recipe (recipe.id)}
-            <RecipeCard {recipe} />
-        {/each}
-    </div>
+    
+    {#if searchState.results.length === 0}
+        <div class="empty-state">
+            <div class="empty-message">
+                <h2>找不到相關食譜☹️</h2>
+                <p>
+                    {#if searchState.type === 'recipe'}
+                        試試使用不同的關鍵字，或更改搜尋方式
+                    {:else}
+                        試試使用其他食材組合，或更改搜尋方式
+                    {/if}
+                </p>
+            </div>
+        </div>
+    {:else}
+        <div class="recipe-grid">
+            {#each searchState.results as recipe (recipe.id)}
+                <RecipeCard {recipe} />
+            {/each}
+        </div>
+    {/if}
 </main>
 
 <style lang="scss">
@@ -100,5 +117,30 @@
         grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
         gap: 2rem;
         padding-bottom: 4rem;
+    }
+
+    .empty-state {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 4rem 2rem;
+    }
+
+    .empty-message {
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+
+        h2 {
+            font-size: 1.5rem;
+            color: #333;
+            margin: 0 0 1rem;
+        }
+
+        p {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+        }
     }
 </style>
