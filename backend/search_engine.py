@@ -15,7 +15,9 @@ class RecipeSearchEngine:
     def __init__(self, data_path: str, image_vector_reload = False):
         # 載入食譜資料
         with open(data_path, "r", encoding='utf-8') as f:
-            self.data = json.load(f)
+            data = json.load(f)
+            # 過濾重複的id
+            self.data = list({d['id']: d for d in data}.values())
 
         # 初始化模型
         self.sentence_model = SentenceTransformer(
@@ -23,7 +25,7 @@ class RecipeSearchEngine:
         self.clip_model = CLIPModel.from_pretrained(
             "openai/clip-vit-base-patch32")
         self.clip_processor = CLIPProcessor.from_pretrained(
-            "openai/clip-vit-base-patch32")
+            "./model")
         
         # 初始化 ChromaDB，啟用持久化存儲
         self.client = PersistentClient()
@@ -234,7 +236,7 @@ class RecipeSearchEngine:
                     matching_ingredients.append(ing)
 
             similarities.append({
-                'recipe': recipe,
+                **recipe,
                 'similarity': similarity,
                 'matching_ingredients': matching_ingredients,
                 'total_ingredients': len(recipe.get('ingredients', []))
