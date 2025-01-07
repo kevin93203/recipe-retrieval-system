@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { fly } from 'svelte/transition';
     import { Clock, ChefHat } from 'lucide-svelte'
     import { goto } from '$app/navigation'
     
@@ -16,7 +17,7 @@
     }
   </script>
   
-  <div class="recipe-card">
+  <div class="recipe-card" in:fly={{ x: -200, duration: 2000 }}>
     <div class="image-container">
       <img src={recipe.image} alt={recipe.name} />
       <div class="overlay">

@@ -3,15 +3,22 @@
     import SearchBox from "../components/SearchBox.svelte";
     import { searchState } from "./shared.svelte.js";
 
+    let updateKey = 0;
+
+    // 在需要強制更新時呼叫這個函數
+    function forceUpdate() {
+        updateKey += 1;
+    }
+
     async function searchByQuery() {
-        let url = ""
-        if(searchState.type === "recipe"){
-            url = `http://localhost:8000/api/search?query=${searchState.query}&top_k=12`
+        let url = "";
+        if (searchState.type === "recipe") {
+            url = `http://localhost:8000/api/search?query=${searchState.query}&top_k=12`;
         } else {
-            url = `http://localhost:8000/api/ingredient-search?ingredients=${searchState.query}&top_k=12`
-            console.log(url)
+            url = `http://localhost:8000/api/ingredient-search?ingredients=${searchState.query}&top_k=12`;
+            console.log(url);
         }
-        const res = await fetch(url)
+        const res = await fetch(url);
         let data = await res.json();
 
         if (res.ok) {
@@ -23,12 +30,15 @@
 
     async function searchByImage(file: File) {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append("file", file);
 
-        const res = await fetch(`http://localhost:8000/api/image-search?top_k=12`, {
-            method: 'POST',
-            body: formData,
-        });
+        const res = await fetch(
+            `http://localhost:8000/api/image-search?top_k=12`,
+            {
+                method: "POST",
+                body: formData,
+            },
+        );
 
         let data = await res.json();
 
@@ -39,13 +49,15 @@
         }
     }
 
-    async function handleSearch(query:string) {
+    async function handleSearch(query: string) {
         searchState.query = query;
         searchState.results = await searchByQuery();
+        forceUpdate(); // 加在這裡
     }
 
     async function handleImageUpload(file: File) {
-        searchState.results = await searchByImage(file)
+        searchState.results = await searchByImage(file);
+        forceUpdate(); // 加在這裡
     }
 </script>
 
@@ -55,13 +67,13 @@
         <p>輸入食材或上傳美食照片，尋找你的下一道佳餚</p>
         <SearchBox {handleSearch} {handleImageUpload} />
     </div>
-    
-    {#if searchState.results.length === 0}
+
+    {#if searchState.results.length === 0 && searchState.query !== null}
         <div class="empty-state">
             <div class="empty-message">
                 <h2>找不到相關食譜☹️</h2>
                 <p>
-                    {#if searchState.type === 'recipe'}
+                    {#if searchState.type === "recipe"}
                         試試使用不同的關鍵字，或更改搜尋方式
                     {:else}
                         試試使用其他食材組合，或更改搜尋方式
@@ -71,7 +83,7 @@
         </div>
     {:else}
         <div class="recipe-grid">
-            {#each searchState.results as recipe (recipe.id)}
+            {#each searchState.results as recipe (recipe.id + "-" + updateKey)}
                 <RecipeCard {recipe} />
             {/each}
         </div>

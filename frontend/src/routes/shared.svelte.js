@@ -1,5 +1,5 @@
 export const searchState = $state({
-	query: "",
+	query: null,
     type: "recipe",
     results: [],
     previewUrl: "",
