@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Camera, Search } from "lucide-svelte";
+    import { Camera, X } from "lucide-svelte";
 
     let { handleSearch, handleImageUpload } = $props();
     import { searchState } from "../routes/shared.svelte";
@@ -14,6 +14,7 @@
     function handleFileChange(event) {
         const file = event.target.files[0];
         if (file) {
+            searchState.previewUrl = URL.createObjectURL(file);
             handleImageUpload(file);
         }
         event.target.value = "";
@@ -23,6 +24,13 @@
         const select = e.target as HTMLSelectElement;
         searchState.type = select.value;
         searchInput = "";
+    }
+
+    function clearPreview() {
+        searchState.previewUrl = "";
+        if (searchState.previewUrl) {
+            URL.revokeObjectURL(searchState.previewUrl);
+        }
     }
 </script>
 
@@ -70,6 +78,14 @@
                         : "搜尋食材"}</span
                 >
             </button>
+            {#if searchState.previewUrl}
+                <div class="preview-container">
+                    <img src={searchState.previewUrl} alt="Preview" class="preview-image" />
+                    <button class="clear-preview" onclick={clearPreview}>
+                        <X size={16} />
+                    </button>
+                </div>
+            {/if}
         </div>
     </div>
 </div>
@@ -191,6 +207,47 @@
             background: rgba(221, 36, 118, 0.05);
         }
     }
+/* 修改預覽相關樣式 */
+.preview-container {
+        margin-top: 1rem;
+        position: relative;
+        width: 200px; /* 設定固定寬度 */
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+    }
+
+    .preview-image {
+        width: 100%;
+        height: 200px; /* 設定固定高度 */
+        display: block;
+        border-radius: 8px;
+        object-fit: cover; /* 確保圖片填滿容器且不變形 */
+    }
+
+    .clear-preview {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: white;
+        padding: 0;
+        transition: background-color 0.2s;
+
+        &:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+    }
 
     @media (max-width: 480px) {
         .search-input-group {
@@ -201,6 +258,14 @@
             .search-btn {
                 width: 100%;
             }
+        }
+
+        .preview-container {
+            width: 150px; /* 手機版更小的預覽圖 */
+        }
+
+        .preview-image {
+            height: 150px;
         }
     }
 </style>
