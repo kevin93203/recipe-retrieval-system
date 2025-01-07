@@ -64,6 +64,10 @@ async def image_search(file: UploadFile = File(...), top_k: int = 10):
     image = Image.open(file.file)
     return search_engine.image_search(image, top_k)
 
+@app.post("/api/multimodal-search")
+async def multimodal_search(file: UploadFile = File(...), top_k: int = 10, text: str | None = None):
+    image = Image.open(file.file)
+    return search_engine.multimodal_search(image, text, top_k)
 
 
 @app.get("/api/recipe/{recipe_id}")

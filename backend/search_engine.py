@@ -25,7 +25,7 @@ class RecipeSearchEngine:
         self.clip_model = CLIPModel.from_pretrained(
             "openai/clip-vit-base-patch32")
         self.clip_processor = CLIPProcessor.from_pretrained(
-            "./model")
+            "openai/clip-vit-base-patch32")
         
         # 初始化 ChromaDB，啟用持久化存儲
         self.client = PersistentClient()
@@ -321,3 +321,87 @@ class RecipeSearchEngine:
         search_results = sorted(search_results, key=lambda x : x["distance"])
 
         return search_results
+    
+    def normalize_scores(self, scores: List[float]) -> List[float]:
+            """將分數正規化到 0-1 範圍"""
+            if not scores:
+                return scores
+            min_score = min(scores)
+            max_score = max(scores)
+            if max_score == min_score:
+                return [1.0] * len(scores)
+            return [(s - min_score) / (max_score - min_score) for s in scores]
+
+    def multimodal_search(self, 
+                        image: Image.Image | None = None, 
+                        text: str | None = None, 
+                        top_k: int = 10,
+                        image_weight: float = 0.5,
+                        text_weight: float = 0.5) -> List[dict]:
+        """
+        結合圖片和文字的混合搜尋
+        
+        Args:
+            image: 搜尋用的圖片
+            text: 搜尋用的文字
+            top_k: 返回結果數量
+            image_weight: 圖片搜尋結果的權重 (0-1)
+            text_weight: 文字搜尋結果的權重 (0-1)
+            
+        Returns:
+            搜尋結果列表
+        """
+        if not image and not text:
+            return []
+            
+        # 確保權重和為 1
+        total_weight = image_weight + text_weight
+        image_weight = image_weight / total_weight
+        text_weight = text_weight / total_weight
+        
+        # 儲存所有食譜的綜合分數
+        recipe_scores = defaultdict(lambda: {'image_score': 0.0, 'text_score': 0.0})
+        
+        # 進行圖片搜尋
+        if image:
+            image_results = self.image_search(image, top_k=len(self.data))
+            # 收集所有圖片距離分數
+            image_distances = [r['distance'] for r in image_results]
+            # 將距離轉換為相似度分數並正規化（距離越小越相似）
+            normalized_distances = self.normalize_scores([1 - d/max(image_distances) for d in image_distances])
+            for result, norm_score in zip(image_results, normalized_distances):
+                recipe_scores[result['id']]['image_score'] = norm_score
+        
+        # 進行文字搜尋
+        if text:
+            text_results = self.text_search(text, top_k=len(self.data))
+            # 收集所有文字相似度分數
+            text_similarities = [r['similarity_score'] for r in text_results]
+            # 正規化文字相似度分數
+            normalized_similarities = self.normalize_scores(text_similarities)
+            for result, norm_score in zip(text_results, normalized_similarities):
+                recipe_scores[result['id']]['text_score'] = norm_score
+        
+        # 結合分數
+        final_results = []
+        for recipe_id, scores in recipe_scores.items():
+            recipe = next(r for r in self.data if r['id'] == recipe_id)
+            
+            # 計算加權分數
+            weighted_score = 0.0
+            if image:
+                weighted_score += scores['image_score'] * image_weight
+            if text:
+                weighted_score += scores['text_score'] * text_weight
+            
+            final_results.append({
+                **recipe,
+                'combined_score': weighted_score,
+                'image_score': scores['image_score'],
+                'text_score': scores['text_score']
+            })
+        
+        # 根據綜合分數排序
+        final_results.sort(key=lambda x: x['combined_score'], reverse=True)
+        
+        return final_results[:top_k]

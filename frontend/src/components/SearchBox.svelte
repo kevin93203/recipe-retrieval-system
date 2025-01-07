@@ -4,18 +4,21 @@
     let { handleSearch, handleImageUpload } = $props();
     import { searchState } from "../routes/shared.svelte";
 
-    let searchInput = $state("");
     let fileInput: HTMLInputElement = $state();
 
     function handleSubmit() {
-        handleSearch(searchInput);
+        if (searchState.selectedFile) {
+            handleImageUpload(searchState.selectedFile, searchState.imageSearchTerm);
+        } else {
+            handleSearch(searchState.searchInput);
+        }
     }
 
     function handleFileChange(event) {
         const file = event.target.files[0];
         if (file) {
+            searchState.selectedFile = file;
             searchState.previewUrl = URL.createObjectURL(file);
-            handleImageUpload(file);
         }
         event.target.value = "";
     }
@@ -23,11 +26,15 @@
     function handleTypeChange(e: Event) {
         const select = e.target as HTMLSelectElement;
         searchState.type = select.value;
-        searchInput = "";
+        searchState.searchInput = "";
+        clearImageSearch();
     }
 
-    function clearPreview() {
+    function clearImageSearch() {
+        searchState.searchInput = "";
+        searchState.selectedFile = null;
         searchState.previewUrl = "";
+        searchState.imageSearchTerm = "";
         if (searchState.previewUrl) {
             URL.revokeObjectURL(searchState.previewUrl);
         }
@@ -37,56 +44,68 @@
 <div class="search-container">
     <div class="search-box">
         <div class="search-input-group">
-            <select
-                class="type-select"
-                value={searchState.type}
-                onchange={handleTypeChange}
-            >
-                <option value="recipe">找食譜</option>
-                <option value="ingredient">找食材</option>
-            </select>
-
-            <input
-                type="text"
-                bind:value={searchInput}
-                placeholder={searchState.type === "recipe"
-                    ? "輸入食譜名稱..."
-                    : "輸入食材名稱..."}
-                onkeyup={(e) => e.key === "Enter" && handleSubmit()}
-            />
-            <button class="search-btn" onclick={handleSubmit}>
-                <!-- <Search size={20}/> -->
-                搜尋
-            </button>
-        </div>
-
-        <div class="divider">或</div>
-
-        <div class="image-upload">
-            <input
-                type="file"
-                bind:this={fileInput}
-                accept="image/*"
-                onchange={handleFileChange}
-                style="display: none"
-            />
-            <button class="upload-btn" onclick={() => fileInput.click()}>
-                <Camera size={20} />
-                <span
-                    >上傳圖片{searchState.type === "recipe"
-                        ? "搜尋食譜"
-                        : "搜尋食材"}</span
+            {#if !searchState.selectedFile}
+                <select
+                    class="type-select"
+                    value={searchState.type}
+                    onchange={handleTypeChange}
                 >
-            </button>
-            {#if searchState.previewUrl}
-                <div class="preview-container">
-                    <img src={searchState.previewUrl} alt="Preview" class="preview-image" />
-                    <button class="clear-preview" onclick={clearPreview}>
+                    <option value="recipe">找食譜</option>
+                    <option value="ingredient">找食材</option>
+                </select>
+                <input
+                    type="text"
+                    bind:value={searchState.searchInput}
+                    placeholder={searchState.type === "recipe"
+                        ? "輸入食譜名稱..."
+                        : "輸入食材名稱..."}
+                    onkeyup={(e) => e.key === "Enter" && handleSubmit()}
+                />
+            {:else}
+                <div class="image-search-input">
+                    {#if searchState.previewUrl}
+                        <div class="preview-container">
+                            <img src={searchState.previewUrl} alt="Preview" class="preview-image" />
+                        </div>
+                    {/if}
+                    <input
+                        type="text"
+                        bind:value={searchState.imageSearchTerm}
+                        placeholder="輸入額外的搜尋條件..."
+                        onkeyup={(e) => e.key === "Enter" && handleSubmit()}
+                    />
+                    <button class="clear-preview" onclick={clearImageSearch}>
                         <X size={16} />
                     </button>
                 </div>
             {/if}
+            
+            <button class="search-btn" onclick={handleSubmit}>
+                搜尋
+            </button>
         </div>
+
+        {#if !searchState.selectedFile}
+            <div class="divider">或</div>
+
+            <div class="image-upload">
+                <input
+                    type="file"
+                    bind:this={fileInput}
+                    accept="image/*"
+                    onchange={handleFileChange}
+                    style="display: none"
+                />
+                <button class="upload-btn" onclick={() => fileInput.click()}>
+                    <Camera size={20} />
+                    <span
+                        >上傳圖片{searchState.type === "recipe"
+                            ? "搜尋食譜"
+                            : "搜尋食材"}</span
+                    >
+                </button>
+            </div>
+        {/if}
     </div>
 </div>
 
@@ -128,7 +147,48 @@
         }
     }
 
-    input {
+    .image-search-input {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 0.25rem;
+        position: relative;
+
+        input {
+            flex: 1;
+            border: none;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            
+            &:focus {
+                outline: none;
+            }
+        }
+
+        &:focus-within {
+            border-color: #dd2476;
+            box-shadow: 0 0 0 2px rgba(221, 36, 118, 0.1);
+        }
+    }
+
+    .preview-container {
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .preview-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    input:not(.image-search-input input) {
         flex: 1;
         padding: 0.75rem 1rem;
         border: 1px solid #ddd;
@@ -141,6 +201,26 @@
             outline: none;
             border-color: #dd2476;
             box-shadow: 0 0 0 2px rgba(221, 36, 118, 0.1);
+        }
+    }
+
+    .clear-preview {
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: 50%;
+        background: #f0f0f0;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+            background: #e0e0e0;
+            color: #333;
         }
     }
 
@@ -207,47 +287,6 @@
             background: rgba(221, 36, 118, 0.05);
         }
     }
-/* 修改預覽相關樣式 */
-.preview-container {
-        margin-top: 1rem;
-        position: relative;
-        width: 200px; /* 設定固定寬度 */
-        margin-left: auto;
-        margin-right: auto;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #ddd;
-    }
-
-    .preview-image {
-        width: 100%;
-        height: 200px; /* 設定固定高度 */
-        display: block;
-        border-radius: 8px;
-        object-fit: cover; /* 確保圖片填滿容器且不變形 */
-    }
-
-    .clear-preview {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        background: rgba(0, 0, 0, 0.5);
-        border: none;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        color: white;
-        padding: 0;
-        transition: background-color 0.2s;
-
-        &:hover {
-            background: rgba(0, 0, 0, 0.7);
-        }
-    }
 
     @media (max-width: 480px) {
         .search-input-group {
@@ -255,17 +294,10 @@
 
             .type-select,
             input,
+            .image-search-input,
             .search-btn {
                 width: 100%;
             }
-        }
-
-        .preview-container {
-            width: 150px; /* 手機版更小的預覽圖 */
-        }
-
-        .preview-image {
-            height: 150px;
         }
     }
 </style>

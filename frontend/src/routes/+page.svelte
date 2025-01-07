@@ -28,12 +28,12 @@
         }
     }
 
-    async function searchByImage(file: File) {
+    async function searchByImage(selectedFile: File, imageSearchTerm: string) {
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", selectedFile);
 
         const res = await fetch(
-            `http://localhost:8000/api/image-search?top_k=12`,
+            `http://localhost:8000/api/multimodal-search?top_k=12&text=${imageSearchTerm}`,
             {
                 method: "POST",
                 body: formData,
@@ -55,8 +55,8 @@
         forceUpdate(); // 加在這裡
     }
 
-    async function handleImageUpload(file: File) {
-        searchState.results = await searchByImage(file);
+    async function handleImageUpload(selectedFile: File, imageSearchTerm: string) {
+        searchState.results = await searchByImage(selectedFile, imageSearchTerm);
         forceUpdate(); // 加在這裡
     }
 </script>
